@@ -6,7 +6,7 @@
 #player can move, stack, and rotate pieces
 #pieces have border detection
 
-#point-earning system / full-row-clearing to be added
+#point-earning system / full-row-clearing to be added/fixed
 
 #TODO: disable rotation if it will interfere with wall or another piece
 
@@ -31,6 +31,13 @@ grid_color = 200,200,200
 GRID = []
 GRID_X = 10
 GRID_Y = 20
+
+#0 on the grid means no block, 1 represents a block
+for i in range (GRID_Y):
+    row = []
+    for j in range (GRID_X):
+        row.append(0)
+    GRID.append(row)
 
 tile_size = width/GRID_X
 
@@ -74,11 +81,9 @@ elif num == 7: #left Z-block
 block_list = []
 
 def move_blocks_vertical():
-    global prev_time, current_time
+    global prev_time, current_time, GRID, GRID_X, GRID_Y
     current_time = time.time()
     if current_time-prev_time > 0.8:
-        
-        #if block.y < height-tile_size: block.y+=tile_size
 
         adj_blocks_floating = True
         for x, y in block.adj_blocks:
@@ -89,6 +94,7 @@ def move_blocks_vertical():
             for i in block.adj_blocks:
                 #increase y value of adjactent block by 1 tile
                 i[1] += tile_size
+
         prev_time = time.time()
 
 def move_blocks_horizontal(key):
@@ -136,6 +142,9 @@ def move_blocks_horizontal(key):
 def release_new_block():
     global block
     global block_list
+    global GRID
+
+    check_row() #check to see if any rows are full
 
     #check to see if the current block is directly above another block
     above_another_block = False
@@ -156,6 +165,7 @@ def release_new_block():
     #if block hits ground, add it to the block list and create a new block, or if block is above a pre-existing block
     if on_ground or above_another_block:
         block_list.append(block)
+        GRID[ int(block.y/tile_size) ][ int(block.x//tile_size) ] = 1
         
         #convert adjacent blocks into block objects
         for i in block.adj_blocks:
@@ -164,6 +174,7 @@ def release_new_block():
             b.y = i[1]
             b.color = block.color
             block_list.append(b)
+            GRID[ int(b.y//tile_size) ][ int(b.x//tile_size) ] = 1
 
 
         block = Block()
@@ -241,6 +252,19 @@ def draw_blocks():
         for j in range(GRID_Y):
             pygame.draw.line(screen, grid_color, (i*tile_size, 0), (i*tile_size, height))
             pygame.draw.line(screen, grid_color, (0, j*tile_size), (width, j*tile_size))
+
+def check_row():
+    global GRID, GRID_X, GRID_Y
+
+    for i in range (GRID_Y):
+        sum = 0
+        for j in range (GRID_X):
+            sum += GRID[i][j]
+        if sum == GRID_X: remove_blocks(i)
+
+def remove_blocks(row):
+    for b in block_list:
+        if b.y == row*tile_size: block_list.remove(b)
 
 while 1:
     for event in pygame.event.get():
