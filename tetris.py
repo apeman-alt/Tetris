@@ -1,15 +1,16 @@
 #Josh Muszka
 #Started June 20, 2022
 #Last Updated June 22, 2022
-#Tetris:
+#Tetris
 #current version can spawn two types of pieces with different colors
 #player can move, stack, and rotate pieces
 #pieces have border detection
 
 #point-earning system / full-row-clearing to be added
-#more types of pieces to be added 
 
-import pygame, sys, time, random
+#TODO: disable rotation if it will interfere with wall or another piece
+
+import pygame, sys, time, random, math
 
 pygame.init()
 pygame.display.set_caption('Tetris')
@@ -43,7 +44,7 @@ class Block:
 block = Block()
 
 #randomly choose which type of block to start off with
-num = random.randint(0,1)
+num = random.randint(0,7)
 
 if num == 0: #horizontal line block
     block.adj_blocks = [[block.x-1*tile_size, block.y - 0*tile_size], [block.x-2*tile_size,block.y - 0*tile_size], [block.x+1*tile_size,block.y+0*tile_size]]
@@ -51,6 +52,24 @@ if num == 0: #horizontal line block
 elif num == 1: #vertical line block
     block.adj_blocks = [[block.x+0*tile_size, block.y-1*tile_size], [block.x+0*tile_size,block.y+1*tile_size], [block.x+0*tile_size,block.y+2*tile_size]]
     block.color = 0, 0, 255
+elif num == 2: #square block
+    block.adj_blocks = [[block.x+0*tile_size, block.y+1*tile_size], [block.x-1*tile_size,block.y+1*tile_size], [block.x-1*tile_size,block.y+0*tile_size]]
+    block.color = 0, 255, 0
+elif num == 3: #t-block
+    block.adj_blocks = [[block.x+1*tile_size, block.y+0*tile_size], [block.x-1*tile_size,block.y+0*tile_size], [block.x+0*tile_size,block.y-1*tile_size]]
+    block.color = 255, 255, 0
+elif num == 4: #left L-block
+    block.adj_blocks = [[block.x-1*tile_size, block.y+0*tile_size], [block.x+0*tile_size,block.y+1*tile_size], [block.x+0*tile_size,block.y+2*tile_size]]
+    block.color = 255, 127, 0
+elif num == 5: #right L-block
+    block.adj_blocks = [[block.x+1*tile_size, block.y+0*tile_size], [block.x+0*tile_size,block.y+1*tile_size], [block.x+0*tile_size,block.y+2*tile_size]]
+    block.color = 150, 150, 255
+elif num == 6: #right Z-block
+    block.adj_blocks = [[block.x-1*tile_size, block.y+0*tile_size], [block.x+0*tile_size,block.y+1*tile_size], [block.x+1*tile_size,block.y+1*tile_size]]
+    block.color = 255, 150, 150
+elif num == 7: #left Z-block
+    block.adj_blocks = [[block.x+1*tile_size, block.y+0*tile_size], [block.x+0*tile_size,block.y+1*tile_size], [block.x-1*tile_size,block.y+1*tile_size]]
+    block.color = 200, 0, 200
 
 block_list = []
 
@@ -79,20 +98,27 @@ def move_blocks_horizontal(key):
     right = False
     if not block.x < width-tile_size: right = True
     for i in block.adj_blocks:
+        x= i[0]
+        if not x < width-tile_size: right = True
+    for b in block_list:
+        if block.x == b.x-tile_size and block.y == b.y: right = True
         for i in block.adj_blocks:
-            x= i[0]
+            x=i[0]
             y=i[1]
-            if not x < width-tile_size: right = True
-    
-    #check if piece is bordering on left wall
+            if x == b.x-tile_size and y == b.y: right = True
+
+    #check if piece is bordering on left wall or piece
     left = False
     if not block.x > 0: left = True
     for i in block.adj_blocks:
+        x= i[0]
+        if not x > 0: left = True
+    for b in block_list:
+        if block.x == b.x+tile_size and block.y == b.y: left = True
         for i in block.adj_blocks:
-            x= i[0]
+            x=i[0]
             y=i[1]
-            if not x > 0: left = True
-
+            if x == b.x+tile_size and y == b.y: left = True
 
     #move left unless against left border, or at bottom of floor
     #move right unless against right border, or at bottom of floor
@@ -143,7 +169,7 @@ def release_new_block():
         block = Block()
 
         #randomly choose which type of block
-        num = random.randint(0,1)
+        num = random.randint(0,7)
 
         if num == 0: #horizontal line block
             block.adj_blocks = [[block.x-1*tile_size, block.y - 0*tile_size], [block.x-2*tile_size,block.y - 0*tile_size], [block.x+1*tile_size,block.y+0*tile_size]]
@@ -151,6 +177,24 @@ def release_new_block():
         elif num == 1: #vertical line block
             block.adj_blocks = [[block.x+0*tile_size, block.y-1*tile_size], [block.x+0*tile_size,block.y+1*tile_size], [block.x+0*tile_size,block.y+2*tile_size]]
             block.color = 0, 0, 255
+        elif num == 2: #square block
+            block.adj_blocks = [[block.x+0*tile_size, block.y+1*tile_size], [block.x-1*tile_size,block.y+1*tile_size], [block.x-1*tile_size,block.y+0*tile_size]]
+            block.color = 0, 255, 0
+        elif num == 3: #t-block
+            block.adj_blocks = [[block.x+1*tile_size, block.y+0*tile_size], [block.x-1*tile_size,block.y+0*tile_size], [block.x+0*tile_size,block.y-1*tile_size]]
+            block.color = 255, 255, 0
+        elif num == 4: #left L-block
+            block.adj_blocks = [[block.x-1*tile_size, block.y+0*tile_size], [block.x+0*tile_size,block.y+1*tile_size], [block.x+0*tile_size,block.y+2*tile_size]]
+            block.color = 255, 127, 0 
+        elif num == 5: #right L-block
+            block.adj_blocks = [[block.x+1*tile_size, block.y+0*tile_size], [block.x+0*tile_size,block.y+1*tile_size], [block.x+0*tile_size,block.y+2*tile_size]]
+            block.color = 150, 150, 255
+        elif num == 6: #right Z-block
+            block.adj_blocks = [[block.x-1*tile_size, block.y+0*tile_size], [block.x+0*tile_size,block.y+1*tile_size], [block.x+1*tile_size,block.y+1*tile_size]]
+            block.color = 255, 150, 150
+        elif num == 7: #left Z-block
+            block.adj_blocks = [[block.x+1*tile_size, block.y+0*tile_size], [block.x+0*tile_size,block.y+1*tile_size], [block.x-1*tile_size,block.y+1*tile_size]]
+            block.color = 200, 0, 200
 
 def rotate_blocks(key):
 
@@ -171,6 +215,14 @@ def rotate_blocks(key):
             elif not dx == 0 and dy == 0:
                 i[0] += dx*tile_size
                 i[1] -= dx*tile_size
+            elif dx < 0 and dy < 0:
+                i[0] -= (abs(dx) + abs(dy))*tile_size
+            elif dx > 0 and dy > 0:
+                i[0] += (abs(dx) + abs(dy))*tile_size
+            elif dx > 0 and dy < 0:
+                i[1] -= (abs(dx) + abs(dy))*tile_size
+            elif dx < 0 and dy > 0:
+                i[1] += (abs(dx) + abs(dy))*tile_size
 
 def draw_blocks():
     #draw anchored block
