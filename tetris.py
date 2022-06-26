@@ -1,6 +1,6 @@
 #Josh Muszka
 #Started June 20, 2022
-#Last Updated June 22, 2022
+#Last Updated June 26, 2022
 #Tetris
 #current version can spawn two types of pieces with different colors
 #player can move, stack, and rotate pieces
@@ -8,9 +8,11 @@
 
 #point-earning system / full-row-clearing to be added/fixed
 
-#TODO: disable rotation if it will interfere with wall or another piece
+#TODO: disable rotation if it will interfere another piece
 
 import pygame, sys, time, random, math
+
+score = 0
 
 pygame.init()
 pygame.display.set_caption('Tetris')
@@ -31,13 +33,6 @@ grid_color = 200,200,200
 GRID = []
 GRID_X = 10
 GRID_Y = 20
-
-#0 on the grid means no block, 1 represents a block
-for i in range (GRID_Y):
-    row = []
-    for j in range (GRID_X):
-        row.append(0)
-    GRID.append(row)
 
 tile_size = width/GRID_X
 
@@ -165,7 +160,6 @@ def release_new_block():
     #if block hits ground, add it to the block list and create a new block, or if block is above a pre-existing block
     if on_ground or above_another_block:
         block_list.append(block)
-        GRID[ int(block.y/tile_size) ][ int(block.x//tile_size) ] = 1
         
         #convert adjacent blocks into block objects
         for i in block.adj_blocks:
@@ -174,8 +168,6 @@ def release_new_block():
             b.y = i[1]
             b.color = block.color
             block_list.append(b)
-            GRID[ int(b.y//tile_size) ][ int(b.x//tile_size) ] = 1
-
 
         block = Block()
 
@@ -235,6 +227,42 @@ def rotate_blocks(key):
             elif dx < 0 and dy > 0:
                 i[1] += (abs(dx) + abs(dy))*tile_size
 
+    #adjust block position if it's outside of border
+    over_left = False
+    over_right = False
+    for b in block.adj_blocks:
+        x = b[0]
+        if x < 0 or block.x < 0: 
+            over_left = True
+            break
+        if x > width-tile_size or block.x > width - tile_size:
+            over_right = True
+            break
+
+    while over_left:
+        block.x += tile_size
+        for b in block.adj_blocks: 
+            b[0] += tile_size
+
+        over_left = False
+        for b in block.adj_blocks:
+            x = b[0]
+            if x < 0 or block.x < 0: 
+                over_left = True
+                break
+                
+    while over_right:
+        block.x -= tile_size
+        for b in block.adj_blocks: 
+            b[0] -= tile_size
+
+        over_right = False
+        for b in block.adj_blocks:
+            x = b[0]
+            if x > width-tile_size or block.x > width - tile_size:
+                over_right = True
+                break
+
 def draw_blocks():
     #draw anchored block
     pygame.draw.rect(screen, block.color, pygame.Rect(block.x,block.y,tile_size,tile_size))
@@ -254,17 +282,20 @@ def draw_blocks():
             pygame.draw.line(screen, grid_color, (0, j*tile_size), (width, j*tile_size))
 
 def check_row():
-    global GRID, GRID_X, GRID_Y
-
+    row = 0
     for i in range (GRID_Y):
         sum = 0
-        for j in range (GRID_X):
-            sum += GRID[i][j]
-        if sum == GRID_X: remove_blocks(i)
-
-def remove_blocks(row):
+        for b in block_list:
+            if b.y == i*tile_size: sum += 1
+        if sum == GRID_X: 
+            row = i
+            for b in block_list:
+                if b.y == row*tile_size: b.color = 'black'
+        
     for b in block_list:
-        if b.y == row*tile_size: block_list.remove(b)
+        if b.color == 'black':
+            block_list.remove(b)
+    
 
 while 1:
     for event in pygame.event.get():
